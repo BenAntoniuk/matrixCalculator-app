@@ -1,55 +1,54 @@
 import streamlit as st
 import numpy as np
+import pandas as pd
 
 st.title("Matrix Calculator")
 
-st.write("Enter your matrix (rows separated by semicolons `;`, numbers by spaces).")
-matrix_input = st.text_area("Matrix Input", "1 2; 3 4")
+# Ask for matrix dimensions
+rows = st.number_input("Number of rows", min_value=1, max_value=6, value=2)
+cols = st.number_input("Number of columns", min_value=1, max_value=6, value=2)
 
-# --- Parse the matrix input ---
-def parse_matrix(input_str):
+# Create empty DataFrame for user to fill
+default_data = np.zeros((rows, cols))
+df = pd.DataFrame(default_data, dtype=float)
+
+st.write("Enter your matrix values:")
+matrix_input = st.data_editor(df, num_rows="dynamic")
+
+# Convert DataFrame to numpy array
+A = matrix_input.to_numpy()
+
+st.write("**Matrix A:**")
+st.write(A)
+
+# Pick operation
+operation = st.selectbox("Choose an operation:", 
+                         ["Transpose", "Inverse", "Multiply by Itself", "Eigenvalues"])
+
+if operation == "Transpose":
+    st.write("**Transpose:**")
+    st.write(A.T)
+
+elif operation == "Inverse":
     try:
-        rows = input_str.strip().split(";")
-        matrix = [list(map(float, row.split())) for row in rows]
-        return np.array(matrix)
-    except Exception:
-        return None
+        st.write("**Inverse:**")
+        st.write(np.linalg.inv(A))
+    except np.linalg.LinAlgError:
+        st.error("Matrix is singular and cannot be inverted.")
 
-A = parse_matrix(matrix_input)
-
-if A is None:
-    st.error("Invalid matrix format. Example: `1 2; 3 4`")
-else:
-    st.write("**Matrix A:**")
-    st.write(A)
-
-    # Buttons for operations
-    operation = st.selectbox("Choose an operation:", 
-                             ["Transpose", "Inverse", "Multiply by Itself", "Eigenvalues"])
-
-    if operation == "Transpose":
-        st.write("**Transpose:**")
-        st.write(A.T)
-
-    elif operation == "Inverse":
-        try:
-            inv = np.linalg.inv(A)
-            st.write("**Inverse:**")
-            st.write(inv)
-        except np.linalg.LinAlgError:
-            st.error("Matrix is singular and cannot be inverted.")
-
-    elif operation == "Multiply by Itself":
-        result = np.dot(A, A)
+elif operation == "Multiply by Itself":
+    try:
         st.write("**A × A:**")
-        st.write(result)
+        st.write(np.dot(A, A))
+    except Exception as e:
+        st.error(f"Error: {e}")
 
-    elif operation == "Eigenvalues":
-        try:
-            vals, vecs = np.linalg.eig(A)
-            st.write("**Eigenvalues:**")
-            st.write(vals)
-            st.write("**Eigenvectors:**")
-            st.write(vecs)
-        except np.linalg.LinAlgError:
-            st.error("Eigenvalue calculation failed.")
+elif operation == "Eigenvalues":
+    try:
+        vals, vecs = np.linalg.eig(A)
+        st.write("**Eigenvalues:**")
+        st.write(vals)
+        st.write("**Eigenvectors:**")
+        st.write(vecs)
+    except np.linalg.LinAlgError:
+        st.error("Eigenvalue calculation failed.")
