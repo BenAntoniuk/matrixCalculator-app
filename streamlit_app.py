@@ -31,6 +31,40 @@ def get_matrix(name):
     matrix_input = st.data_editor(df, num_rows="dynamic", key=f"editor_{name}")
     return matrix_input.to_numpy()
 
+# --- Helper: check matrix properties ---
+def check_properties(M, name="Matrix"):
+    if M.shape[0] != M.shape[1]:
+        st.subheader(f"🔎 Results for {name}")
+        st.info("Matrix is not square, so some checks are skipped.")
+    else:
+        st.subheader(f"🔎 Results for {name}")
+
+        # Symmetric
+        if np.allclose(M, M.T, atol=1e-8):
+            st.success("✅ Symmetric")
+
+        # Orthogonal
+        I = np.eye(M.shape[0])
+        if np.allclose(M.T @ M, I, atol=1e-8):
+            st.success("✅ Orthogonal")
+
+        # Hat matrix
+        symmetric = np.allclose(M, M.T, atol=1e-8)
+        idempotent = np.allclose(M @ M, M, atol=1e-8)
+        if symmetric and idempotent:
+            st.success("✅ Hat matrix")
+
+    # Always compute eigenvalues if square
+    if M.shape[0] == M.shape[1]:
+        try:
+            vals, vecs = np.linalg.eig(M)
+            st.write("**Eigenvalues:**")
+            st.write(vals)
+            st.write("**Eigenvectors:**")
+            st.write(vecs)
+        except np.linalg.LinAlgError:
+            st.error("Eigenvalue calculation failed.")
+
 # --- Classroom Mode ---
 if mode == "Classroom Mode":
     use_two_matrices = st.checkbox("Work with two matrices (A and B)?", value=False)
@@ -123,5 +157,23 @@ if mode == "Classroom Mode":
 
 # --- Special Matrix Identifier Mode ---
 elif mode == "Special Matrix Identifier":
-    st.subheader("Special Matrix Identifier (Coming Soon)")
-    st.info("This mode will let you test if a matrix is diagonal, symmetric, positive definite, etc.")
+    use_two_matrices = st.checkbox("Work with two matrices (A and B)?", value=False)
+
+    A = get_matrix("A")
+    B = get_matrix("B") if use_two_matrices else None
+
+    # Analyze A
+    check_properties(A, "Matrix A")
+
+    # Analyze B (if provided)
+    if B is not None:
+        check_properties(B, "Matrix B")
+
+        # Multiply A × B
+        if A.shape[1] == B.shape[0]:
+            C = A @ B
+            st.subheader("**Result of A × B:**")
+            st.write(C)
+            check_properties(C, "Matrix A × B")
+        else:
+            st.warning("⚠️ Cannot multiply A × B (dimension mismatch).")
