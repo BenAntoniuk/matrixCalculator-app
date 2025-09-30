@@ -2,10 +2,23 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 
-st.title("Matrix Calculator")
+# --- Header banner ---
+st.markdown(
+    """
+    <div style="background-color:#0A2647; padding:15px; border-radius:10px; text-align:center;">
+        <h1 style="color:white;">Matrix Calculator</h1>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-# --- Mode selection ---
-mode = st.radio("Choose Mode:", ["Classroom Mode", "Special Matrix Identifier"])
+# --- Mode selection dropdown ---
+mode = st.selectbox(
+    "Choose Mode:",
+    ["Classroom Mode", "Special Matrix Identifier"],
+    index=0,
+    key="mode_selector"
+)
 
 # --- Matrix input helper ---
 def get_matrix(name):
