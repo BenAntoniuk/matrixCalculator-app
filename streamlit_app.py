@@ -31,8 +31,11 @@ if B is not None:
 if use_two_matrices:
     operation = st.selectbox("Choose an operation:", ["A × B"])
 else:
-    operation = st.selectbox("Choose an operation:", 
-                             ["Transpose", "Inverse", "Multiply by Itself", "Eigenvalues", "Check Orthogonal"])
+    operation = st.selectbox(
+        "Choose an operation:",
+        ["Transpose", "Inverse", "Multiply by Itself", "Eigenvalues",
+         "Check Orthogonal", "Check Hat Matrix"]
+    )
 
 # --- Operations ---
 if operation == "Transpose":
@@ -73,6 +76,23 @@ elif operation == "Check Orthogonal":
             st.success("✅ Matrix A is orthogonal.")
         else:
             st.warning("❌ Matrix A is NOT orthogonal.")
+
+elif operation == "Check Hat Matrix":
+    if A.shape[0] != A.shape[1]:
+        st.error("Matrix must be square to check if it's a hat matrix.")
+    else:
+        symmetric = np.allclose(A, A.T, atol=1e-8)
+        idempotent = np.allclose(A @ A, A, atol=1e-8)
+
+        if symmetric and idempotent:
+            st.success("✅ Matrix A is a hat matrix.")
+        else:
+            if not symmetric and not idempotent:
+                st.warning("❌ Matrix A is NOT a hat matrix (fails symmetry and idempotence).")
+            elif not symmetric:
+                st.warning("❌ Matrix A is NOT a hat matrix (fails symmetry).")
+            else:
+                st.warning("❌ Matrix A is NOT a hat matrix (fails idempotence).")
 
 elif operation == "A × B":
     try:
