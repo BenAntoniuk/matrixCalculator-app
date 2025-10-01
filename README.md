@@ -2,4 +2,4 @@
 
 App made with Streamlit
 
-[![Open in Streamlit](https://blank-app-etwihlc9c7w.streamlit.app/)](https://matrix_calculator_wip.app/)
+[![Open in Streamlit](Mr matrix man)](https://blank-app-etwihlc9c7w.streamlit.app/)
