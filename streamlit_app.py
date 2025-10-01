@@ -1,7 +1,8 @@
 import streamlit as st
 import numpy as np
-import pandas as pd
 from scipy import linalg
+import pandas as pd
+
 
 # --- Header banner ---
 st.markdown(
