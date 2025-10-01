@@ -1,6 +1,6 @@
 import streamlit as st
 import numpy as np
-from scipy import linalg
+# from scipy import linalg I want this but not working rn looking at later
 import pandas as pd
 
 
