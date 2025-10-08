@@ -35,35 +35,140 @@ def get_matrix(name):
 
 # --- Helper: check matrix properties ---
 def check_properties(M, name="Matrix"):
-    if M.shape[0] != M.shape[1]:
-        st.subheader(f"🔎 Results for {name}")
-        st.info("Matrix is not square, so some checks are skipped.")
-    else:
-        st.subheader(f"🔎 Results for {name}")
+    st.subheader(f"🔎 Results for {name}")
 
-        # Symmetric
-        if np.allclose(M, M.T, atol=1e-8):
-            st.success("✅ Symmetric")
+    rows, cols = M.shape
+    square = rows == cols
+    atol = 1e-8  # tolerance for float comparisons
 
-        # Orthogonal
-        I = np.eye(M.shape[0])
-        if np.allclose(M.T @ M, I, atol=1e-8):
-            st.success("✅ Orthogonal")
+    # --- Basic Info ---
+    st.write(f"Shape: {rows} × {cols}")
 
-        # Hat matrix
-        symmetric = np.allclose(M, M.T, atol=1e-8)
-        idempotent = np.allclose(M @ M, M, atol=1e-8)
+    # --- Sparse check ---
+    sparsity = 1 - (np.count_nonzero(M) / M.size)
+    if sparsity > 0.9:
+        st.success(f"✅ Sparse matrix ({sparsity*100:.1f}% zeros)")
+
+    # --- Hollow check ---
+    if np.allclose(np.diag(M), 0, atol=atol):
+        st.success("✅ Hollow matrix (zero diagonal)")
+
+    # --- Triangular checks ---
+    if square:
+        if np.allclose(M, np.triu(M), atol=atol):
+            st.success("✅ Upper triangular matrix")
+        if np.allclose(M, np.tril(M), atol=atol):
+            st.success("✅ Lower triangular matrix")
+
+    # --- Symmetric / Persymmetric / Bisymmetric ---
+    if square:
+        symmetric = np.allclose(M, M.T, atol=atol)
+        persymmetric = np.allclose(M, np.flipud(np.fliplr(M.T)), atol=atol)
+
+        if symmetric:
+            st.success("✅ Symmetric matrix")
+        if persymmetric:
+            st.success("✅ Persymmetric matrix")
+        if symmetric and persymmetric:
+            st.success("✅ Bisymmetric matrix")
+
+    # --- Idempotent ---
+    if square and np.allclose(M @ M, M, atol=atol):
+        st.success("✅ Idempotent matrix (M² = M)")
+
+    # --- Orthogonal ---
+    if square:
+        I = np.eye(rows)
+        if np.allclose(M.T @ M, I, atol=atol):
+            st.success("✅ Orthogonal matrix")
+
+    # --- Hat matrix (symmetric + idempotent) ---
+    if square:
+        symmetric = np.allclose(M, M.T, atol=atol)
+        idempotent = np.allclose(M @ M, M, atol=atol)
         if symmetric and idempotent:
-            st.success("✅ Hat matrix")
+            st.success("✅ Hat matrix (projection matrix)")
 
-    # Always compute eigenvalues if square
-    if M.shape[0] == M.shape[1]:
+    # --- Hermitian ---
+    if square and np.allclose(M, np.conjugate(M.T), atol=atol):
+        st.success("✅ Hermitian matrix")
+
+    # --- Positive (semi)definite ---
+    if square:
+        try:
+            eigvals = np.linalg.eigvalsh(M)
+            if np.all(eigvals > atol):
+                st.success("✅ Positive definite matrix (all eigenvalues > 0)")
+            elif np.all(eigvals >= -atol):
+                st.success("✅ Positive semidefinite matrix (all eigenvalues ≥ 0)")
+        except np.linalg.LinAlgError:
+            st.warning("⚠️ Could not compute eigenvalues for definiteness check")
+
+    # --- Hadamard ---
+    if square and np.all(np.isin(M, [-1, 1])):
+        if np.allclose(M @ M.T, rows * np.eye(rows), atol=atol):
+            st.success("✅ Hadamard matrix (±1 entries, orthogonal rows)")
+
+    # --- Hankel ---
+    if np.allclose(M, np.fliplr(np.triu(np.fliplr(M))), atol=atol):
+        # Check if constant along anti-diagonals
+        is_hankel = all(np.allclose(np.diag(np.fliplr(M), k), np.diag(np.fliplr(M), k)[0], atol=atol)
+                        for k in range(-rows + 1, cols))
+        if is_hankel:
+            st.success("✅ Hankel matrix (constant along anti-diagonals)")
+
+    # --- Hilbert ---
+    if square and np.allclose(M, [[1 / (i + j + 1) for j in range(cols)] for i in range(rows)], atol=1e-6):
+        st.success("✅ Hilbert matrix")
+
+    # --- Lehmer ---
+    if square and np.allclose(M, [[min(i + 1, j + 1) / max(i + 1, j + 1) for j in range(cols)] for i in range(rows)], atol=1e-6):
+        st.success("✅ Lehmer matrix")
+
+    # --- Generalized permutation ---
+    if square:
+        nonzeros_per_row = np.sum(M != 0, axis=1)
+        nonzeros_per_col = np.sum(M != 0, axis=0)
+        if np.all(nonzeros_per_row == 1) and np.all(nonzeros_per_col == 1):
+            st.success("✅ Generalized permutation matrix (one nonzero per row/col)")
+
+    # --- Metzler ---
+    if square and np.all(M - np.diag(np.diag(M)) >= -atol):
+        st.success("✅ Metzler matrix (off-diagonal elements ≥ 0)")
+
+    # --- Markov ---
+    if np.all(M >= -atol) and np.allclose(M.sum(axis=1), 1, atol=atol):
+        st.success("✅ Markov matrix (rows sum to 1, nonnegative)")
+
+    # --- Bidiagonal ---
+    if square:
+        is_upper_bidiag = np.allclose(M, np.triu(M, -1), atol=atol) and np.allclose(M, np.triu(M, 0), atol=atol)
+        is_lower_bidiag = np.allclose(M, np.tril(M, 1), atol=atol) and np.allclose(M, np.tril(M, 0), atol=atol)
+        if is_upper_bidiag:
+            st.success("✅ Upper bidiagonal matrix")
+        elif is_lower_bidiag:
+            st.success("✅ Lower bidiagonal matrix")
+
+    # --- Band matrix (bandwidth ≤ 2 example) ---
+    if square:
+        bandwidth = np.max(np.abs(np.nonzero(M - np.diag(np.diag(M)))[0] - np.nonzero(M - np.diag(np.diag(M)))[1]))
+        if bandwidth <= 2:
+            st.success(f"✅ Band matrix (bandwidth ≤ {bandwidth})")
+
+    # --- Arrowhead ---
+    if square:
+        A = M.copy()
+        A[0, 0] = 0
+        A[0, 1:] = 0
+        A[1:, 0] = 0
+        if np.count_nonzero(A - np.diag(np.diag(A))) == 0:
+            st.success("✅ Arrowhead matrix (nonzero first row/col + diagonal)")
+
+    # --- Display Eigenvalues (for user insight) ---
+    if square:
         try:
             vals, vecs = np.linalg.eig(M)
-            st.write("**Eigenvalues:**")
-            st.write(vals)
-            st.write("**Eigenvectors:**")
-            st.write(vecs)
+            st.write("**Eigenvalues:**", np.round(vals, 4))
         except np.linalg.LinAlgError:
             st.error("Eigenvalue calculation failed.")
 
