@@ -158,6 +158,11 @@ def check_properties(M, name="Matrix"):
     if np.all(M >= -atol) and np.allclose(M.sum(axis=1), 1, atol=atol):
         st.success("✅ Markov matrix (rows sum to 1, nonnegative)")
 
+    # Diagonal matrix
+    if np.allclose(M, np.diag(np.diag(M)), atol=1e-8):
+        st.success("✅ Diagonal matrix")
+
+    
     # --- Bidiagonal (upper or lower) ---
     rows_idx, cols_idx = np.nonzero(np.abs(M) > atol)
     upper_bidiag = False
