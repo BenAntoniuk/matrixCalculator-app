@@ -48,7 +48,7 @@ def check_properties(M, name="Matrix"):
     # --- Sparse ---
     nnz = np.count_nonzero(np.abs(M) > atol)
     sparsity = 1 - nnz / M.size
-    if sparsity > 0.9:
+    if sparsity > 0.5:
         st.success(f"✅ Sparse matrix ({sparsity*100:.1f}% zeros)")
 
     # --- Hollow (zero diagonal) ---
