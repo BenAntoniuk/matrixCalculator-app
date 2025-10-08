@@ -173,14 +173,16 @@ def check_properties(M, name="Matrix"):
     elif lower_bidiag:
         st.success("✅ Lower bidiagonal matrix")
 
+
+    #This band stuff dont work yet :(
     # --- Bandwidth and Band matrix (robust to empty nonzero set) ---
-    if rows_idx.size == 0:
-        bandwidth = 0
-    else:
-        bandwidth = int(np.max(np.abs(rows_idx - cols_idx)))
+    #if rows_idx.size == 0:
+    #    bandwidth = 0
+    #else:
+    #    bandwidth = int(np.max(np.abs(rows_idx - cols_idx)))
     # Example threshold: report if bandwidth ≤ 2 (you can change threshold)
-    if bandwidth <= 2:
-        st.success(f"✅ Band matrix (bandwidth ≤ {bandwidth})")
+    #if bandwidth <= 2:
+    #    st.success(f"✅ Band matrix (bandwidth ≤ {bandwidth})")
 
     # --- Arrowhead: only first row, first col, and diagonal may be nonzero ---
     allowed_mask = np.zeros_like(M, dtype=bool)
