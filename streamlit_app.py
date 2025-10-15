@@ -269,3 +269,9 @@ if mode == "Classroom Mode":
 elif mode == "Special Matrix Identifier":
     A = get_matrix("A")
     check_properties(A, "Matrix A")
+
+
+
+
+
+# ADD SOMETHING TO ALLOW FOR COMPLEX INPUTS MAYBE, LIKE A CHECKBOX IDK
