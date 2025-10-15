@@ -127,19 +127,23 @@ def check_properties(M, name="Matrix"):
         if np.all(M - np.diag(np.diag(M)) >= 0):
             st.success("✅ Metzler matrix")
 
-        # --- Arrowhead (custom definition) ---
-        first_row_ones = np.allclose(M[0, :], np.ones(cols), atol=1e-8)
-        first_col_ones = np.allclose(M[:, 0], np.ones(rows), atol=1e-8)
-        diag_ones = np.allclose(np.diag(M), np.ones(min(rows, cols)), atol=1e-8)
+        
+        # --- Arrowhead (custom definition, must be square) ---
+        if rows == cols:
+            first_row_ones = np.allclose(M[0, :], np.ones(cols), atol=1e-8)
+            first_col_ones = np.allclose(M[:, 0], np.ones(rows), atol=1e-8)
+            diag_ones = np.allclose(np.diag(M), np.ones(rows), atol=1e-8)
 
-        mask = np.ones_like(M, dtype=bool)
-        mask[0, :] = False
-        mask[:, 0] = False
-        np.fill_diagonal(mask, False)
-        others_zero = np.allclose(M[mask], 0, atol=1e-8)
+            # Everything else (non-first row/col and off-diagonal) should be 0
+            mask = np.ones_like(M, dtype=bool)
+            mask[0, :] = False
+            mask[:, 0] = False
+            np.fill_diagonal(mask, False)
+            others_zero = np.allclose(M[mask], np.zeros(np.count_nonzero(mask)), atol=1e-8)
 
-        if first_row_ones and first_col_ones and diag_ones and others_zero:
-            st.success("✅ Arrowhead matrix (1s in first row/column/diagonal, 0s elsewhere)")
+            if first_row_ones and first_col_ones and diag_ones and others_zero:
+                st.success("✅ Arrowhead matrix (1s in first row/column and diagonal, 0s elsewhere)")
+
 
         # --- Band / Bidiagonal ---
         nonzero = np.nonzero(M - np.diag(np.diag(M)))
