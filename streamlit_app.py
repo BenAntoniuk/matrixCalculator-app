@@ -219,26 +219,17 @@ def check_properties(M, name="Matrix"):
 
 # --- Classroom Mode ---
 if mode == "Classroom Mode":
-    use_two_matrices = st.checkbox("Work with two matrices (A and B)?", value=False)
-
     A = get_matrix("A")
-    B = get_matrix("B") if use_two_matrices else None
 
     st.write("**Matrix A:**")
     st.write(A)
-    if B is not None:
-        st.write("**Matrix B:**")
-        st.write(B)
 
     # --- Operation selection ---
-    if use_two_matrices:
-        operation = st.selectbox("Choose an operation:", ["A × B"])
-    else:
-        operation = st.selectbox(
-            "Choose an operation:",
-            ["Transpose", "Inverse", "Multiply by Itself", "Eigenvalues",
-             "Check Orthogonal", "Check Hat Matrix"]
-        )
+    operation = st.selectbox(
+        "Choose an operation:",
+        ["Transpose", "Inverse", "Multiply by Itself", "Eigenvalues",
+         "Check Orthogonal", "Check Hat Matrix"]
+    )
 
     # --- Operations ---
     if operation == "Transpose":
@@ -297,15 +288,6 @@ if mode == "Classroom Mode":
                 else:
                     st.warning("❌ Matrix A is NOT a hat matrix (fails idempotence).")
 
-    elif operation == "A × B":
-        try:
-            if A.shape[1] != B.shape[0]:
-                st.error("Number of columns in A must equal number of rows in B.")
-            else:
-                st.write("**A × B:**")
-                st.write(np.dot(A, B))
-        except Exception as e:
-            st.error(f"Error: {e}")
 
 # --- Special Matrix Identifier Mode ---
 elif mode == "Special Matrix Identifier":
