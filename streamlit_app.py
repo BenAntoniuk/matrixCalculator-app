@@ -142,7 +142,7 @@ def check_properties(M, name="Matrix"):
             others_zero = np.allclose(M[mask], np.zeros(np.count_nonzero(mask)), atol=1e-8)
 
             if first_row_ones and first_col_ones and diag_ones and others_zero:
-                st.success("✅ Arrowhead matrix (1s in first row/column and diagonal, 0s elsewhere)")
+                st.success("✅ Arrowhead matrix")
 
 
         # --- Band / Bidiagonal ---
