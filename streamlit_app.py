@@ -95,6 +95,11 @@ def check_properties(M, name="Matrix"):
             if np.allclose(M @ M.T, rows * np.eye(rows), atol=1e-8):
                 st.success("✅ Hadamard matrix")
 
+
+        # SPACE THE CHECK FOR BLOCK MATRIX
+
+
+        
         # --- Hollow ---
         if np.allclose(np.diag(M), np.zeros(rows), atol=1e-8):
             st.success("✅ Hollow matrix")
@@ -145,6 +150,11 @@ def check_properties(M, name="Matrix"):
                 st.success("✅ Arrowhead matrix")
 
 
+
+
+
+
+        #THIS DUDE DEFINITLY DOES NOT WORK
         # --- Band / Bidiagonal ---
         nonzero = np.nonzero(M - np.diag(np.diag(M)))
         if len(nonzero[0]) > 0:
