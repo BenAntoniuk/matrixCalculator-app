@@ -190,15 +190,20 @@ def check_properties(M, name="Matrix"):
     #    st.success(f"✅ Band matrix (bandwidth ≤ {bandwidth})")
 
     # --- Arrowhead: only first row, first col, and diagonal may be nonzero ---
-    allowed_mask = np.zeros_like(M, dtype=bool)
-    allowed_mask[0, :] = True
-    allowed_mask[:, 0] = True
-    d = min(rows, cols)
-    idx = np.arange(d)
-    allowed_mask[idx, idx] = True
-    # True if every entry outside allowed_mask is (near) zero
-    if np.all((np.abs(M) <= atol) | allowed_mask):
-        st.success("✅ Arrowhead matrix (nonzero first row/col + diagonal)")
+    first_row_ones = np.allclose(M[0, :], np.ones(cols), atol=1e-8)
+    first_col_ones = np.allclose(M[:, 0], np.ones(rows), atol=1e-8)
+    diag_ones = np.allclose(np.diag(M), np.ones(min(rows, cols)), atol=1e-8)
+
+    # Everything else (non-first row/col and off-diagonal) should be 0
+    mask = np.ones_like(M, dtype=bool)
+    mask[0, :] = False
+    mask[:, 0] = False
+    np.fill_diagonal(mask, False)
+    others_zero = np.allclose(M[mask], np.zeros(np.count_nonzero(mask)), atol=1e-8)
+
+    if first_row_ones and first_col_ones and diag_ones and others_zero:
+        st.success("✅ Arrowhead matrix (1s in first row/column and diagonal, 0s elsewhere)")
+
 
     # --- Display eigenvalues (square only) ---
     if square:
