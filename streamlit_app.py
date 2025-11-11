@@ -88,76 +88,76 @@ def check_properties(M, name="Matrix"):
 
         # --- Skew-symmetric (A = -Aᵀ) ---
         if square and np.allclose(M, -M.T, atol=1e-8):
-        st.success("✅ Skew-Symmetric")
+            st.success("✅ Skew-Symmetric")
         
 
 
         # --- Involutory (A² = I) ---
         if square and np.allclose(M @ M, np.eye(M.shape[0]), atol=1e-8):
-        st.success("✅ Involutory Matrix")
+            st.success("✅ Involutory Matrix")
 
 
         # --- Nilpotent (Aᵏ = 0 for some k ≤ n) ---
         if square:
-        power = np.copy(M)
-        for k in range(1, M.shape[0] + 1):
-            if np.allclose(power, np.zeros_like(M), atol=1e-8):
-                st.success(f"✅ Nilpotent (A^{k} = 0)")
-                break
-            power = power @ M
-
-
-
-    # --- Toeplitz matrix (constant diagonals) ---
-    if np.allclose(M, np.array([np.roll(M[0], i) for i in range(M.shape[0])])[:M.shape[0], :M.shape[1]], atol=1e-8):
-        st.success("✅ Toeplitz Matrix")
-
-    # ---  Circulant matrix (each row is a cyclic shift of previous) ---
-    circulant = True
-    for i in range(1, M.shape[0]):
-        if not np.allclose(np.roll(M[0], i), M[i, :], atol=1e-8):
-            circulant = False
-            break
-    if circulant:
-        st.success("✅ Circulant Matrix")
-
-    # --- Vandermonde matrix (geometric progression in columns) ---
-    # check if rows follow powers of a base vector
-    if M.shape[0] > 1 and M.shape[1] > 1:
-        ratios = []
-        try:
-            for j in range(1, M.shape[1]):
-                r = M[:, j] / M[:, 0]**j
-                ratios.append(np.allclose(r, r[0], atol=1e-8))
-            if all(ratios):
-                st.success("✅ Vandermonde Matrix")
-        except Exception:
-            pass
-
-    # ---  Companion matrix (special form: 1s on subdiagonal, last row = coefficients) ---
-    if square and np.allclose(M[:-1, 1:], np.eye(M.shape[0]-1), atol=1e-8) and np.allclose(M[:-1, 0], 0):
-        st.success("✅ Companion Matrix")
-
-    # --- Jordan block (λ on diagonal, 1s on superdiagonal, zeros elsewhere) ---
-    if square:
-        diag_vals = np.diag(M)
-        if np.allclose(np.diag(M, k=1), np.ones(M.shape[0]-1), atol=1e-8):
-            off_diag = M - np.diag(diag_vals) - np.diag(np.ones(M.shape[0]-1), 1)
-            if np.allclose(off_diag, np.zeros_like(M), atol=1e-8):
-                st.success("✅ Jordan Block Matrix")
-
-    # --- Pascal matrix (entries are binomial coefficients) ---
-    if M.shape[0] == M.shape[1]:
-        pascal_like = True
-        for i in range(M.shape[0]):
-            for j in range(M.shape[1]):
-                if not np.allclose(M[i, j], np.math.comb(i + j, j), atol=1e-8):
-                    pascal_like = False
+            power = np.copy(M)
+            for k in range(1, M.shape[0] + 1):
+                if np.allclose(power, np.zeros_like(M), atol=1e-8):
+                    st.success(f"✅ Nilpotent (A^{k} = 0)")
                     break
-            if not pascal_like:
+                power = power @ M
+
+
+
+        # --- Toeplitz matrix (constant diagonals) ---
+        if np.allclose(M, np.array([np.roll(M[0], i) for i in range(M.shape[0])])[:M.shape[0], :M.shape[1]], atol=1e-8):
+            st.success("✅ Toeplitz Matrix")
+    
+        # ---  Circulant matrix (each row is a cyclic shift of previous) ---
+        circulant = True
+        for i in range(1, M.shape[0]):
+            if not np.allclose(np.roll(M[0], i), M[i, :], atol=1e-8):
+                circulant = False
                 break
-        if pascal_like:
-            st.success("✅ Pascal Matrix")
+        if circulant:
+            st.success("✅ Circulant Matrix")
+    
+        # --- Vandermonde matrix (geometric progression in columns) ---
+        # check if rows follow powers of a base vector
+        if M.shape[0] > 1 and M.shape[1] > 1:
+            ratios = []
+            try:
+                for j in range(1, M.shape[1]):
+                    r = M[:, j] / M[:, 0]**j
+                    ratios.append(np.allclose(r, r[0], atol=1e-8))
+                if all(ratios):
+                    st.success("✅ Vandermonde Matrix")
+            except Exception:
+                pass
+    
+        # ---  Companion matrix (special form: 1s on subdiagonal, last row = coefficients) ---
+        if square and np.allclose(M[:-1, 1:], np.eye(M.shape[0]-1), atol=1e-8) and np.allclose(M[:-1, 0], 0):
+            st.success("✅ Companion Matrix")
+    
+        # --- Jordan block (λ on diagonal, 1s on superdiagonal, zeros elsewhere) ---
+        if square:
+            diag_vals = np.diag(M)
+            if np.allclose(np.diag(M, k=1), np.ones(M.shape[0]-1), atol=1e-8):
+                off_diag = M - np.diag(diag_vals) - np.diag(np.ones(M.shape[0]-1), 1)
+                if np.allclose(off_diag, np.zeros_like(M), atol=1e-8):
+                    st.success("✅ Jordan Block Matrix")
+    
+        # --- Pascal matrix (entries are binomial coefficients) ---
+        if M.shape[0] == M.shape[1]:
+            pascal_like = True
+            for i in range(M.shape[0]):
+                for j in range(M.shape[1]):
+                    if not np.allclose(M[i, j], np.math.comb(i + j, j), atol=1e-8):
+                        pascal_like = False
+                        break
+                if not pascal_like:
+                    break
+            if pascal_like:
+                st.success("✅ Pascal Matrix")
 
 
         
