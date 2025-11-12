@@ -154,7 +154,7 @@ def check_properties(M, name="Matrix"):
             pascal_like = True
             for i in range(M.shape[0]):
                 for j in range(M.shape[1]):
-                    if not np.allclose(M[i, j], np.math.comb(i + j, j), atol=1e-8):
+                    if not np.allclose(M[i, j], math.comb(i + j, j), atol=1e-8):
                         pascal_like = False
                         break
                 if not pascal_like:
