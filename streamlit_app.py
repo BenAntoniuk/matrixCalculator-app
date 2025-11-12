@@ -256,7 +256,7 @@ def check_properties(M, name="Matrix"):
     if rows == cols:
         try:
             vals, vecs = np.linalg.eig(M)
-            formatted_vals = [str(v).replace('j', 'i') for v in vals]
+            formatted_vals = np.array([str(v).replace('j', 'i') for v in vals], dtype=object)
             st.write("**Eigenvalues:**", formatted_vals)
             st.write("**Eigenvectors:**")
             st.write(vecs)
@@ -310,7 +310,7 @@ if mode == "Classroom Mode":
         try:
             vals, vecs = np.linalg.eig(A)
             st.write("**Eigenvalues:**")
-            formatted_vals = [str(v).replace('j', 'i') for v in vals]
+            formatted_vals = np.array([str(v).replace('j', 'i') for v in vals], dtype=object)
             st.write(formatted_vals)
             st.write("**Eigenvectors:**")
             st.write(vecs)
