@@ -258,8 +258,11 @@ def check_properties(M, name="Matrix"):
             vals, vecs = np.linalg.eig(M)
             formatted_vals = np.array([str(v).replace('j', 'i') for v in vals], dtype=object)
             st.write("**Eigenvalues:**", formatted_vals)
+
+            formatted_vecs = np.array(
+            [[str(val).replace('j', 'i') for val in row] for row in vecs], dtype=object)
             st.write("**Eigenvectors:**")
-            st.write(vecs)
+            st.write(formatted_vecs)
         except np.linalg.LinAlgError:
             st.error("Eigenvalue calculation failed.")
 
@@ -313,7 +316,10 @@ if mode == "Classroom Mode":
             formatted_vals = np.array([str(v).replace('j', 'i') for v in vals], dtype=object)
             st.write(formatted_vals)
             st.write("**Eigenvectors:**")
-            st.write(vecs)
+
+            formatted_vecs = np.array(
+            [[str(val).replace('j', 'i') for val in row] for row in vecs], dtype=object)
+            st.write(formatted_vecs)
         except np.linalg.LinAlgError:
             st.error("Eigenvalue calculation failed.")
 
