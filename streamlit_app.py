@@ -68,7 +68,10 @@ def check_properties(M, name="Matrix"):
         # --- Hat matrix ---
         symmetric = np.allclose(M, M.T, atol=1e-8)
         idempotent = np.allclose(M @ M, M, atol=1e-8)
-        if symmetric and idempotent:
+        eigs = np.linalg.eigvalsh(M)
+        semiDef = np.all(eigs >= -1e-10)
+        
+        if symmetric and idempotent and semiDef:
             st.success("✅ Hat matrix")
 
         # --- Hermitian ---
