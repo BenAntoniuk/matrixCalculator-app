@@ -35,6 +35,8 @@ def get_matrix(name):
 # --- Matrix property checks ---
 def check_properties(M, name="Matrix"):
     rows, cols = M.shape
+    square = rows == cols
+
     st.subheader(f"🔎 Results for {name}")
 
     if rows != cols:
