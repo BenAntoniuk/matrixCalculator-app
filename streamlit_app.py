@@ -4,8 +4,7 @@ import pandas as pd
 import math
 
 # ---------- CONFIG ----------
-# PDF link removed as requested
-PDF_URL = "/mnt/data/Many_many_matrices (6).pdf"  
+PDF_URL = "/mnt/data/Many_many_matrices (6).pdf"  # kept for reference, not used in UI
 
 # ---------- Small helper ----------
 def safe_allclose(a, b, atol=1e-8):
@@ -52,12 +51,13 @@ MATRIX_DEFINITIONS = {
 }
 
 # ---------- UI helper for detected types ----------
-def show_info_expander(name):
-    """Display detected matrix type in a green success box with checkmark."""
-    desc = MATRIX_DEFINITIONS.get(name, None)
-    if desc is None:
-        return
-    st.success(f"✅ {name}: {desc}")
+def show_info_expander(name, extra_info=None):
+    """Display a detected matrix type in green checkmark style."""
+    desc = MATRIX_DEFINITIONS.get(name, "")
+    full_desc = f"{desc}"
+    if extra_info is not None:
+        full_desc += f" ({extra_info})"
+    st.success(f"✅ {name}: {full_desc}")
 
 # ---------- Matrix input helper ----------
 def get_matrix(name):
@@ -97,7 +97,7 @@ def check_properties(M, name="Matrix"):
         detected.append("Skew-Symmetric")
         show_info_expander("Skew-Symmetric")
 
-    # Toeplitz: all diagonals constant
+    # Toeplitz
     def is_toeplitz(mat):
         r, c = mat.shape
         for k in range(-r+1, c):
@@ -171,23 +171,32 @@ def check_properties(M, name="Matrix"):
             power = power @ A
         if nil:
             detected.append("Nilpotent")
-            with st.expander("Nilpotent", expanded=False):
-                st.write(MATRIX_DEFINITIONS.get("Nilpotent", ""))
-                st.write(f"Index of nilpotency ≤ {nil_index}")
+            show_info_expander("Nilpotent", extra_info=f"Index of nilpotency ≤ {nil_index}")
 
     # Involutory
     if square and safe_allclose(A @ A, np.eye(rows)):
         detected.append("Involutory")
         show_info_expander("Involutory")
 
-    # Additional heuristics (Hadamard, Hankel, Persymmetric, Sparse, etc.)
-    # For brevity, other checks can remain as in your previous code
-    # ...
+    # Additional heuristics (Hadamard, Hankel, Persymmetric, Sparse, Orthogonal, Hat, etc.)
+    # For each, use show_info_expander
+    # Orthogonal
+    if square and safe_allclose(A.T @ A, np.eye(rows)):
+        detected.append("Orthogonal")
+        show_info_expander("Orthogonal")
 
-    if len(detected) == 0:
-        st.write("No special types positively detected (based on current heuristics).")
-    else:
-        st.write("Detected types:", ", ".join(detected))
+    # Hermitian
+    if square and safe_allclose(A, np.conjugate(A.T)):
+        detected.append("Hermitian")
+        show_info_expander("Hermitian")
+
+    # Idempotent / Hat
+    if square and safe_allclose(A @ A, A):
+        detected.append("Idempotent")
+        show_info_expander("Idempotent")
+        if safe_allclose(A, A.T):
+            detected.append("Hat")
+            show_info_expander("Hat")
 
     # Eigenvalues/vectors
     if square:
@@ -199,8 +208,6 @@ def check_properties(M, name="Matrix"):
             st.write(vecs)
         except np.linalg.LinAlgError:
             st.error("Eigenvalue calculation failed.")
-    else:
-        st.write("Eigen analysis skipped for non-square matrix.")
 
 # ---------- APP UI ----------
 st.markdown(
@@ -240,16 +247,57 @@ if mode == "Classroom Mode":
             ["Transpose", "Inverse", "Multiply by Itself", "Eigenvalues", "Check Orthogonal", "Check Hat Matrix"]
         )
 
-    # ... all your existing operations remain unchanged ...
+    if op == "Transpose":
+        st.write("**Transpose:**")
+        st.write(A.T)
+    elif op == "Inverse":
+        try:
+            st.write("**Inverse:**")
+            st.write(np.linalg.inv(A))
+        except np.linalg.LinAlgError:
+            st.error("Matrix is singular and cannot be inverted.")
+    elif op == "Multiply by Itself":
+        st.write("**A × A:**")
+        st.write(A @ A)
+    elif op == "Eigenvalues":
+        vals, vecs = np.linalg.eig(A)
+        st.write("**Eigenvalues:**")
+        st.write(vals)
+        st.write("**Eigenvectors:**")
+        st.write(vecs)
+    elif op == "Check Orthogonal":
+        if A.shape[0] != A.shape[1]:
+            st.error("Matrix must be square to check orthogonality.")
+        else:
+            if np.allclose(A.T @ A, np.eye(A.shape[0]), atol=1e-8):
+                st.success("✅ Matrix A is orthogonal.")
+            else:
+                st.warning("❌ Matrix A is NOT orthogonal.")
+    elif op == "Check Hat Matrix":
+        if A.shape[0] != A.shape[1]:
+            st.error("Matrix must be square to check if it's a hat matrix.")
+        else:
+            symmetric = np.allclose(A, A.T, atol=1e-8)
+            idempotent = np.allclose(A @ A, A, atol=1e-8)
+            if symmetric and idempotent:
+                st.success("✅ Matrix A is a hat matrix.")
+            else:
+                st.warning("❌ Matrix A is NOT a hat matrix.")
+    elif op == "A × B":
+        if A.shape[1] != B.shape[0]:
+            st.error("Number of columns in A must equal number of rows in B.")
+        else:
+            C = A @ B
+            st.write("**A × B:**")
+            st.write(C)
 
 # --- Special Matrix Identifier Mode ---
 elif mode == "Special Matrix Identifier":
 
-    # Dropdown of all matrix types
-    st.subheader("All Matrix Types Checked:")
-    matrix_type_list = list(MATRIX_DEFINITIONS.keys())
-    selected_type = st.selectbox("Select a type to view its description:", matrix_type_list)
-    st.write(MATRIX_DEFINITIONS[selected_type])
+    # Sidebar dropdown for all matrix types
+    st.sidebar.subheader("All Matrix Types")
+    selected_type = st.sidebar.selectbox("Select a type to view its description:", list(MATRIX_DEFINITIONS.keys()))
+    st.sidebar.write(MATRIX_DEFINITIONS[selected_type])
 
     use_two_matrices = st.checkbox("Work with two matrices (A and B)?", value=False)
 
