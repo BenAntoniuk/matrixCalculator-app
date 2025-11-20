@@ -4,7 +4,7 @@ import pandas as pd
 import math
 
 # ---------- CONFIG ----------
-PDF_URL = "/mnt/data/Many_many_matrices (6).pdf"  # external file provided by you
+PDF_URL = "xxxxxxxxx"  # external file provided by you
 
 # ---------- Small helper ----------
 def safe_allclose(a, b, atol=1e-8):
