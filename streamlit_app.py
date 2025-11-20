@@ -20,6 +20,8 @@ MATRIX_DEFINITIONS = {
     "Bidiagonal": "Square matrix with non-zero entries along the main diagonal and one adjacent diagonal.",
     "Bisymmetric": "A square symmetric matrix that is symmetric with respect to the main and off diagonals.",
     "Block Matrix": "A matrix subdivided into blocks that are matrices themselves.",
+    "Companion": "A square matrix encoding coefficients of a monic polynomial.",
+    "Circulant": "A Toeplitz matrix where each row is a cyclic shift of the previous.",
     "Generalized Permutation": "Contains the same non-zero pattern as a permutation matrix but allows any non-zero values.",
     "Hadamard": "Square matrix of +1 or -1 entries whose rows are mutually orthogonal.",
     "Hankel": "A matrix where the anti-diagonals are constant.",
@@ -28,10 +30,14 @@ MATRIX_DEFINITIONS = {
     "Hilbert": "Each entry is 1/(i+j-1). Hilbert matrices are Hankel and symmetric.",
     "Hollow": "A matrix with a zero diagonal, or a large zero block, or sparse enough to be considered hollow.",
     "Idempotent": "A matrix such that A² = A.",
+    "Involutory": "A matrix where A² = I.",
+    "Jordan Block": "Upper triangular with λ on diagonal and 1s on superdiagonal.",
     "Lehmer": "A matrix with entries min(i,j)/max(i,j).",
     "Markov": "Non-negative entries and each column sums to 1.",
     "Metzler": "All off-diagonal elements are nonnegative.",
+    "Nilpotent": "A square matrix A such that Aᵏ = 0 for some k.",
     "Orthogonal": "A square matrix where Aᵀ = A⁻¹.",
+    "Pascal": "A symmetric matrix with entries from Pascal’s triangle.",
     "Permutation": "A binary matrix with exactly one 1 per row and column.",
     "Persymmetric": "A square matrix symmetric across the anti-diagonal.",
     "Positive Definite": "A symmetric matrix whose eigenvalues are all positive.",
@@ -39,15 +45,9 @@ MATRIX_DEFINITIONS = {
     "Skew-Symmetric": "A square matrix whose transpose is the negative of itself, Aᵀ = –A.",
     "Sparse": "A matrix with most entries equal to zero (typically over 50%).",
     "Symmetric": "A square matrix equal to its transpose.",
-    "Triangular": "A square matrix where entries above or below the diagonal are zero.",
     "Toeplitz": "A diagonal-constant matrix: each descending diagonal is constant.",
-    "Circulant": "A Toeplitz matrix where each row is a cyclic shift of the previous.",
-    "Vandermonde": "Each row is 1, xᵢ, xᵢ², … forming geometric progressions.",
-    "Companion": "A square matrix encoding coefficients of a monic polynomial.",
-    "Nilpotent": "A square matrix A such that Aᵏ = 0 for some k.",
-    "Involutory": "A matrix where A² = I.",
-    "Jordan Block": "Upper triangular with λ on diagonal and 1s on superdiagonal.",
-    "Pascal": "A symmetric matrix with entries from Pascal’s triangle."
+    "Triangular": "A square matrix where entries above or below the diagonal are zero.",
+    "Vandermonde": "Each row is 1, xᵢ, xᵢ², … forming geometric progressions."
 }
 
 # ---------- UI helper for detected types ----------
@@ -178,8 +178,6 @@ def check_properties(M, name="Matrix"):
         detected.append("Involutory")
         show_info_expander("Involutory")
 
-    # Additional heuristics (Hadamard, Hankel, Persymmetric, Sparse, Orthogonal, Hat, etc.)
-    # For each, use show_info_expander
     # Orthogonal
     if square and safe_allclose(A.T @ A, np.eye(rows)):
         detected.append("Orthogonal")
@@ -229,7 +227,6 @@ mode = st.selectbox(
 # --- Classroom Mode (unchanged) ---
 if mode == "Classroom Mode":
     use_two_matrices = st.checkbox("Work with two matrices (A and B)?", value=False)
-
     A = get_matrix("A")
     B = get_matrix("B") if use_two_matrices else None
 
@@ -294,10 +291,11 @@ if mode == "Classroom Mode":
 # --- Special Matrix Identifier Mode ---
 elif mode == "Special Matrix Identifier":
 
-    # Sidebar dropdown for all matrix types
+    # Sidebar dropdown for all matrix types (alphabetized)
     st.sidebar.subheader("All Matrix Types")
-    selected_type = st.sidebar.selectbox("Select a type to view its description:", list(MATRIX_DEFINITIONS.keys()))
-    st.sidebar.write(MATRIX_DEFINITIONS[selected_type])
+    all_types_sorted = sorted(MATRIX_DEFINITIONS.keys())
+    selected_type = st.sidebar.selectbox("Select a type to view its description:", all_types_sorted)
+    st.sidebar.markdown(f"**{selected_type}**  \n{MATRIX_DEFINITIONS[selected_type]}")
 
     use_two_matrices = st.checkbox("Work with two matrices (A and B)?", value=False)
 
@@ -308,13 +306,11 @@ elif mode == "Special Matrix Identifier":
     check_properties(A, "Matrix A")
 
     if use_two_matrices:
-        # Input matrix B
         B = get_matrix("B")
         st.write("**Matrix B preview:**")
         st.write(B)
         check_properties(B, "Matrix B")
 
-        # Multiply and analyze product
         if A.shape[1] == B.shape[0]:
             C = A @ B
             st.subheader("**Result of A × B:**")
