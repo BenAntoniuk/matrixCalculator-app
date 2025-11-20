@@ -57,7 +57,7 @@ def show_info_expander(name, extra_info=None):
     full_desc = f"{desc}"
     if extra_info is not None:
         full_desc += f" ({extra_info})"
-    st.success(f"✅ {name}: {full_desc}")
+    st.success(f"✅ **{name}**: {full_desc}")
 
 # ---------- Matrix input helper ----------
 def get_matrix(name):
