@@ -396,10 +396,7 @@ if mode == "Classroom Mode":
                 st.write(C)
         except Exception as e:
             st.error(f"Error: {e}")
-
-    # Classroom footer / warning
-    st.warning("⚠️ Classroom Mode is for learning — results may not cover every edge case.")
-
+            
 # ---------- Special Matrix Identifier Mode ----------
 elif mode == "Special Matrix Identifier":
     # Sidebar dropdown for all matrix types (alphabetized)
