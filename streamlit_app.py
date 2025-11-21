@@ -4,16 +4,15 @@ import pandas as pd
 import math
 
 # ---------- CONFIG ----------
-PDF_URL = ""  # kept for reference, not used in UI
+PDF_URL = "/mnt/data/Many_many_matrices (6).pdf"
 
-# ---------- Small helper ----------
 def safe_allclose(a, b, atol=1e-8):
     try:
         return np.allclose(a, b, atol=atol)
     except Exception:
         return False
 
-# ---------- MATRIX TYPE DEFINITIONS (from LaTeX) ----------
+# ---------- MATRIX TYPE DEFINITIONS ----------
 MATRIX_DEFINITIONS = {
     "Arrowhead": "Square matrix where all entries are 0 except for the main diagonal, first row, and first column.",
     "Band": "A sparse matrix where the non-zero elements are centered around the main diagonal in a band.",
@@ -43,169 +42,135 @@ MATRIX_DEFINITIONS = {
     "Positive Definite": "A symmetric matrix whose eigenvalues are all positive.",
     "Positive Semidefinite": "A symmetric matrix whose eigenvalues are all nonnegative.",
     "Skew-Symmetric": "A square matrix whose transpose is the negative of itself, Aᵀ = –A.",
-    "Sparse": "A matrix with most entries equal to zero (typically over 50%).",
+    "Sparse": "A matrix with most entries equal to zero.",
     "Symmetric": "A square matrix equal to its transpose.",
     "Toeplitz": "A diagonal-constant matrix: each descending diagonal is constant.",
     "Triangular": "A square matrix where entries above or below the diagonal are zero.",
     "Vandermonde": "Each row is 1, xᵢ, xᵢ², … forming geometric progressions."
 }
 
-# ---------- UI helper for detected types ----------
+# ---------- UI helper ----------
 def show_info_expander(name, extra_info=None):
-    """Display a detected matrix type in green checkmark style."""
     desc = MATRIX_DEFINITIONS.get(name, "")
-    full_desc = f"{desc}"
-    if extra_info is not None:
-        full_desc += f" ({extra_info})"
+    full_desc = desc if extra_info is None else f"{desc} ({extra_info})"
     st.success(f"✅ **{name}**: {full_desc}")
 
-# ---------- Matrix input helper ----------
+# ---------- Matrix input ----------
 def get_matrix(name):
     st.subheader(f"Matrix {name}")
-    rows = st.number_input(f"Number of rows for {name}", min_value=1, max_value=12, value=2, key=f"rows_{name}")
-    cols = st.number_input(f"Number of columns for {name}", min_value=1, max_value=12, value=2, key=f"cols_{name}")
-    default_data = np.zeros((rows, cols))
-    df = pd.DataFrame(default_data, dtype=float)
-    st.write(f"Enter values for {name}: (use decimals for non-integers)")
-    matrix_input = st.data_editor(df, num_rows="dynamic", key=f"editor_{name}")
+    rows = st.number_input(f"Number of rows for {name}", 1, 12, 2, key=f"rows_{name}")
+    cols = st.number_input(f"Number of columns for {name}", 1, 12, 2, key=f"cols_{name}")
+    df = pd.DataFrame(np.zeros((rows, cols)), dtype=float)
+    st.write(f"Enter values for {name}:")
+    mat = st.data_editor(df, num_rows="dynamic", key=f"editor_{name}")
     try:
-        return matrix_input.to_numpy()
-    except Exception:
-        return np.array(matrix_input, dtype=float)
+        return mat.to_numpy()
+    except:
+        return np.array(mat)
 
-# ---------- Property checks ----------
-def check_properties(M, name="Matrix"):
-    rows, cols = M.shape
-    square = rows == cols
+# ---------- Property checker ----------
+def check_properties(A, name="Matrix"):
+    rows, cols = A.shape
+    sq = rows == cols
 
     st.subheader(f"🔎 Results for {name}")
 
-    if not square:
-        st.info("Matrix is not square — only non-square-specific checks and eigenvalues (skipped).")
-
-    detected = []
-
-    A = np.array(M, dtype=float)
-
     # Symmetric
-    if square and safe_allclose(A, A.T):
-        detected.append("Symmetric")
+    if sq and safe_allclose(A, A.T):
         show_info_expander("Symmetric")
 
     # Skew-symmetric
-    if square and safe_allclose(A, -A.T):
-        detected.append("Skew-Symmetric")
+    if sq and safe_allclose(A, -A.T):
         show_info_expander("Skew-Symmetric")
 
     # Toeplitz
-    def is_toeplitz(mat):
-        r, c = mat.shape
+    def is_toeplitz(M):
+        r, c = M.shape
         for k in range(-r+1, c):
-            d = np.diag(mat, k=k)
-            if d.size > 0 and not np.allclose(d, d[0], atol=1e-8):
+            diag = np.diag(M, k)
+            if diag.size and not np.allclose(diag, diag[0]):
                 return False
         return True
 
     if is_toeplitz(A):
-        detected.append("Toeplitz")
         show_info_expander("Toeplitz")
 
     # Circulant
-    if rows == cols:
-        first_row = A[0, :]
-        circ = True
-        for i in range(rows):
-            if not np.allclose(np.roll(first_row, i), A[i, :], atol=1e-8):
-                circ = False
-                break
-        if circ:
-            detected.append("Circulant")
+    if sq:
+        first = A[0]
+        if all(np.allclose(np.roll(first, i), A[i]) for i in range(rows)):
             show_info_expander("Circulant")
 
     # Vandermonde
-    def is_vandermonde(mat):
-        r, c = mat.shape
-        if r < 1 or c < 2:
+    def is_vand(M):
+        r, c = M.shape
+        if c < 2:
             return False
-        col0 = mat[:, 0]
-        if not np.allclose(col0, np.ones(r), atol=1e-8):
+        if not np.allclose(M[:, 0], 1):
             return False
-        x = mat[:, 1]
+        x = M[:, 1]
         for j in range(c):
-            if not np.allclose(mat[:, j], x**j, atol=1e-7):
+            if not np.allclose(M[:, j], x**j):
                 return False
         return True
 
     try:
-        if is_vandermonde(A):
-            detected.append("Vandermonde")
+        if is_vand(A):
             show_info_expander("Vandermonde")
-    except Exception:
+    except:
         pass
 
     # Companion
-    def is_companion(mat):
-        if mat.shape[0] != mat.shape[1]:
+    def is_comp(M):
+        if M.shape[0] != M.shape[1]:
             return False
-        n = mat.shape[0]
-        for i in range(1, n):
-            if not np.isclose(mat[i, i-1], 1.0, atol=1e-8):
-                return False
-        if not np.allclose(mat[:-1, :-1], 0, atol=1e-8):
+        n = M.shape[0]
+        if not np.allclose(M[1:, :-1], np.eye(n-1), atol=1e-8):
+            return False
+        if not np.allclose(M[:-1, :-1], 0):
             return False
         return True
 
-    if is_companion(A):
-        detected.append("Companion")
+    if is_comp(A):
         show_info_expander("Companion")
 
     # Nilpotent
-    if square:
-        power = np.copy(A)
-        nil = False
+    if sq:
+        P = A.copy()
         for k in range(1, rows + 1):
-            if np.allclose(power, np.zeros_like(A), atol=1e-8):
-                nil = True
-                nil_index = k
+            if np.allclose(P, 0):
+                show_info_expander("Nilpotent", f"Index ≤ {k}")
                 break
-            power = power @ A
-        if nil:
-            detected.append("Nilpotent")
-            show_info_expander("Nilpotent", extra_info=f"Index of nilpotency ≤ {nil_index}")
+            P = P @ A
 
     # Involutory
-    if square and safe_allclose(A @ A, np.eye(rows)):
-        detected.append("Involutory")
+    if sq and safe_allclose(A @ A, np.eye(rows)):
         show_info_expander("Involutory")
 
     # Orthogonal
-    if square and safe_allclose(A.T @ A, np.eye(rows)):
-        detected.append("Orthogonal")
+    if sq and safe_allclose(A.T @ A, np.eye(rows)):
         show_info_expander("Orthogonal")
 
     # Hermitian
-    if square and safe_allclose(A, np.conjugate(A.T)):
-        detected.append("Hermitian")
+    if sq and safe_allclose(A, np.conjugate(A.T)):
         show_info_expander("Hermitian")
 
-    # Idempotent / Hat
-    if square and safe_allclose(A @ A, A):
-        detected.append("Idempotent")
+    # Idempotent (and Hat)
+    if sq and safe_allclose(A @ A, A):
         show_info_expander("Idempotent")
         if safe_allclose(A, A.T):
-            detected.append("Hat")
             show_info_expander("Hat")
 
-    # Eigenvalues/vectors
-    if square:
+    # Eigenvalues
+    if sq:
         try:
             vals, vecs = np.linalg.eig(A)
             st.write("**Eigenvalues:**")
             st.write(vals)
             st.write("**Eigenvectors:**")
             st.write(vecs)
-        except np.linalg.LinAlgError:
-            st.error("Eigenvalue calculation failed.")
+        except:
+            st.error("Eigenvalue computation failed.")
 
 # ---------- APP UI ----------
 st.markdown(
@@ -217,103 +182,114 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-mode = st.selectbox(
-    "Choose Mode:",
-    ["Classroom Mode", "Special Matrix Identifier"],
-    index=0,
-    key="mode_selector"
-)
+# STRICT dropdown (typing not allowed)
+mode = st.selectbox("Choose Mode:", ["Classroom Mode", "Special Matrix Identifier"])
 
-# --- Classroom Mode (unchanged) ---
+# ---------------------- CLASSROOM MODE ----------------------
 if mode == "Classroom Mode":
-    use_two_matrices = st.checkbox("Work with two matrices (A and B)?", value=False)
+
+    use_two = st.checkbox("Work with two matrices (A and B)?", value=False)
+
     A = get_matrix("A")
-    B = get_matrix("B") if use_two_matrices else None
+    B = get_matrix("B") if use_two else None
 
-    st.write("**Matrix A:**")
-    st.write(A)
-    if B is not None:
-        st.write("**Matrix B:**")
-        st.write(B)
-
-    if use_two_matrices:
-        op = st.selectbox("Choose an operation:", ["A × B"])
+    if use_two:
+        operation = st.selectbox("Choose an operation:", ["A × B"])
     else:
-        op = st.selectbox(
+        operation = st.selectbox(
             "Choose an operation:",
-            ["Transpose", "Inverse", "Multiply by Itself", "Eigenvalues", "Check Orthogonal", "Check Hat Matrix"]
+            ["Transpose", "Inverse", "Multiply by Itself", "Eigenvalues", 
+             "Check Orthogonal", "Check Hat Matrix", "Hat Matrix Calculator"]   # NEW OPTION
         )
 
-    if op == "Transpose":
-        st.write("**Transpose:**")
+    # ------------ OPERATIONS ------------
+    if operation == "Transpose":
+        st.write("**Aᵀ:**")
         st.write(A.T)
-    elif op == "Inverse":
+
+    elif operation == "Inverse":
         try:
-            st.write("**Inverse:**")
+            st.write("**A⁻¹:**")
             st.write(np.linalg.inv(A))
-        except np.linalg.LinAlgError:
-            st.error("Matrix is singular and cannot be inverted.")
-    elif op == "Multiply by Itself":
+        except:
+            st.error("Matrix is singular.")
+
+    elif operation == "Multiply by Itself":
         st.write("**A × A:**")
         st.write(A @ A)
-    elif op == "Eigenvalues":
+
+    elif operation == "Eigenvalues":
         vals, vecs = np.linalg.eig(A)
         st.write("**Eigenvalues:**")
         st.write(vals)
         st.write("**Eigenvectors:**")
         st.write(vecs)
-    elif op == "Check Orthogonal":
+
+    elif operation == "Check Orthogonal":
         if A.shape[0] != A.shape[1]:
-            st.error("Matrix must be square to check orthogonality.")
+            st.error("Matrix must be square.")
         else:
-            if np.allclose(A.T @ A, np.eye(A.shape[0]), atol=1e-8):
-                st.success("✅ Matrix A is orthogonal.")
+            if np.allclose(A.T @ A, np.eye(A.shape[0])):
+                st.success("✅ A is orthogonal.")
             else:
-                st.warning("❌ Matrix A is NOT orthogonal.")
-    elif op == "Check Hat Matrix":
+                st.warning("❌ A is NOT orthogonal.")
+
+    elif operation == "Check Hat Matrix":
         if A.shape[0] != A.shape[1]:
-            st.error("Matrix must be square to check if it's a hat matrix.")
+            st.error("Matrix must be square.")
         else:
-            symmetric = np.allclose(A, A.T, atol=1e-8)
-            idempotent = np.allclose(A @ A, A, atol=1e-8)
-            if symmetric and idempotent:
-                st.success("✅ Matrix A is a hat matrix.")
+            if np.allclose(A @ A, A) and np.allclose(A, A.T):
+                st.success("✅ A is a hat matrix.")
             else:
-                st.warning("❌ Matrix A is NOT a hat matrix.")
-    elif op == "A × B":
+                st.warning("❌ A is NOT a hat matrix.")
+
+    # ------------ NEW: HAT MATRIX CALCULATOR ------------
+    elif operation == "Hat Matrix Calculator":
+        try:
+            XtX = A.T @ A
+            XtX_inv = np.linalg.inv(XtX)
+            H = A @ XtX_inv @ A.T
+            st.subheader("🎩 Hat Matrix (H = X(XᵀX)⁻¹Xᵀ)")
+            st.write(H)
+
+            # Leverage values
+            leverages = np.diag(H)
+            st.subheader("🔍 Leverage Values")
+            st.write(leverages)
+
+        except np.linalg.LinAlgError:
+            st.error("XᵀX is not invertible — hat matrix cannot be computed.")
+
+    elif operation == "A × B":
         if A.shape[1] != B.shape[0]:
-            st.error("Number of columns in A must equal number of rows in B.")
+            st.error("Column count of A must equal row count of B.")
         else:
-            C = A @ B
             st.write("**A × B:**")
-            st.write(C)
+            st.write(A @ B)
 
-# --- Special Matrix Identifier Mode ---
-elif mode == "Special Matrix Identifier":
-
-    # Sidebar dropdown for all matrix types (alphabetized)
+# ---------------------- SPECIAL MATRIX IDENTIFIER ----------------------
+else:
     st.sidebar.subheader("All Matrix Types")
-    all_types_sorted = sorted(MATRIX_DEFINITIONS.keys())
-    selected_type = st.sidebar.selectbox("Select a type to view its description:", all_types_sorted)
-    st.sidebar.markdown(f"**{selected_type}**  \n{MATRIX_DEFINITIONS[selected_type]}")
+    types_sorted = sorted(MATRIX_DEFINITIONS.keys())
+    sel = st.sidebar.selectbox("Select a type:", types_sorted)
+    st.sidebar.markdown(f"**{sel}**  \n{MATRIX_DEFINITIONS[sel]}")
 
-    use_two_matrices = st.checkbox("Work with two matrices (A and B)?", value=False)
+    use_two = st.checkbox("Work with two matrices (A and B)?", value=False)
 
-    # Input matrix A
     A = get_matrix("A")
-    st.write("**Matrix A preview:**")
+    st.write("**Matrix A Preview:**")
     st.write(A)
     check_properties(A, "Matrix A")
 
-    if use_two_matrices:
+    if use_two:
         B = get_matrix("B")
-        st.write("**Matrix B preview:**")
+        st.write("**Matrix B Preview:**")
         st.write(B)
         check_properties(B, "Matrix B")
 
         if A.shape[1] == B.shape[0]:
             C = A @ B
-            st.subheader("**Result of A × B:**")
+            st.subheader("A × B:")
             st.write(C)
             check_properties(C, "Matrix A × B")
         else:
