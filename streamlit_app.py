@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 import math
+from fractions import Fraction
 
 # ---------- CONFIG ----------
 PDF_URL = "/mnt/data/Many_many_matrices (6).pdf"  # kept for reference
@@ -61,19 +62,36 @@ def show_info_expander(name, extra_info=None):
     # Use markdown-like bold via st.success (it supports simple formatting)
     st.success(f"✅ **{name}**  \n{full_desc}")
 
-# ---------- Matrix input helper (data_editor) ----------
+
+def parse_fraction_safe(x):
+    """Convert numbers or fraction-strings to float safely."""
+    try:
+        if isinstance(x, str):
+            x = x.strip()
+            if "/" in x:
+                return float(Fraction(x))
+            return float(x)
+        return float(x)
+    except Exception:
+        return float("nan")  # invalid entry becomes NaN so user sees the issue
+
 def get_matrix(name):
     st.subheader(f"Matrix {name}")
     rows = st.number_input(f"Number of rows for {name}", min_value=1, max_value=12, value=2, key=f"rows_{name}")
     cols = st.number_input(f"Number of columns for {name}", min_value=1, max_value=12, value=2, key=f"cols_{name}")
-    default_data = np.zeros((rows, cols))
-    df = pd.DataFrame(default_data, dtype=float)
-    st.write(f"Enter values for {name}: (use decimals for non-integers)")
-    matrix_input = st.data_editor(df, num_rows="dynamic", key=f"editor_{name}")
-    try:
-        return matrix_input.to_numpy()
-    except Exception:
-        return np.array(matrix_input, dtype=float)
+
+    default_data = pd.DataFrame([["0" for _ in range(cols)] for _ in range(rows)])
+    st.write(f"Enter values for {name}: (integers, decimals, or fractions like 1/3)")
+    matrix_input = st.data_editor(default_data, num_rows="dynamic", key=f"editor_{name}")
+
+    # Convert the dataframe back into a numeric numpy array (fraction-aware)
+    parsed = np.zeros((len(matrix_input), len(matrix_input.columns)), dtype=float)
+
+    for i in range(len(matrix_input)):
+        for j in range(len(matrix_input.columns)):
+            parsed[i, j] = parse_fraction_safe(matrix_input.iloc[i, j])
+
+    return parsed
 
 # ---------- Property checks ----------
 def check_properties(M, name="Matrix"):
