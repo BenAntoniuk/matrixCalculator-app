@@ -420,7 +420,6 @@ elif mode == "Hat Matrix Calculator":
     st.subheader("Hat Matrix Calculator 🎩")
     input_method = st.radio("Choose input method:", ["Manual Entry", "Import Google Sheet CSV"])
     
-    X = None
     if input_method == "Manual Entry":
         X = get_matrix("X")
     
@@ -445,7 +444,8 @@ elif mode == "Hat Matrix Calculator":
             except Exception as e:
                 st.error(f"Error loading CSV: {e}")
 
-    if X is not None:
+    # Compute Hat matrix if X exists
+    if 'X' in locals():
         try:
             XtX = X.T @ X
             if np.linalg.matrix_rank(XtX) < XtX.shape[0]:
@@ -459,29 +459,6 @@ elif mode == "Hat Matrix Calculator":
                 leverages = np.diag(H)
                 st.subheader("🔍 Leverage Values (diag(H))")
                 st.write(leverages)
-
-                # --- Residuals ---
-                st.subheader("📝 Residuals")
-                # Let user input response vector y
-                y_input = st.text_area(
-                    "Enter response vector y (comma-separated or space-separated):",
-                    value=""
-                )
-                if y_input.strip():
-                    try:
-                        y_values = [parse_fraction_safe(v) for v in y_input.replace(",", " ").split()]
-                        y = np.array(y_values, dtype=float).reshape(-1, 1)
-                        if y.shape[0] != H.shape[0]:
-                            st.error("Length of y does not match number of rows in X.")
-                        else:
-                            y_hat = H @ y
-                            residuals = y - y_hat
-                            st.write("**Predicted y (ŷ):**")
-                            st.write(y_hat)
-                            st.write("**Residuals (y - ŷ):**")
-                            st.write(residuals)
-                    except Exception as e:
-                        st.error(f"Error processing y vector: {e}")
         except Exception as e:
             st.error(f"Error computing hat matrix: {e}")
 
