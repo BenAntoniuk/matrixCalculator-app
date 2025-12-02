@@ -1,8 +1,11 @@
+# app.py — Full copy-paste ready
 import streamlit as st
 import numpy as np
 import pandas as pd
 import math
 from fractions import Fraction
+
+st.set_page_config(page_title="Matrix Toolkit", layout="wide")
 
 # ---------- CONFIG ----------
 PDF_URL = "/mnt/data/Many_many_matrices (6).pdf"  # kept for reference
@@ -51,7 +54,7 @@ MATRIX_DEFINITIONS = {
     "Vandermonde": "Rows are geometric progressions of elements x_i: row i = [1, x_i, x_i^2, ...]."
 }
 
-# Alphabetize keys explicitly (use sorted list where needed)
+# Alphabetize list for sidebar usage
 ALL_TYPES_SORTED = sorted(MATRIX_DEFINITIONS.keys(), key=lambda s: s.lower())
 
 # ---------- UI helper for detected types ----------
@@ -59,13 +62,17 @@ def show_info_expander(name, extra_info=None):
     """Display detected matrix type in green checkmark style with bold name and newline."""
     desc = MATRIX_DEFINITIONS.get(name, "")
     full_desc = desc if extra_info is None else f"{desc} ({extra_info})"
-    # Use markdown-like bold via st.success (it supports simple formatting)
     st.success(f"✅ **{name}**  \n{full_desc}")
 
 # ---------- Fraction parser ----------
 def parse_fraction_safe(x):
-    """Convert numbers or fraction-strings to float safely."""
+    """Convert integers, floats, or fraction strings like '3/4' safely to float."""
     try:
+        # handle pandas / numpy nan directly
+        if x is None:
+            return float("nan")
+        if isinstance(x, float) and np.isnan(x):
+            return float("nan")
         if isinstance(x, str):
             x = x.strip()
             if x == "":
@@ -75,25 +82,28 @@ def parse_fraction_safe(x):
             return float(x)
         return float(x)
     except Exception:
-        return float("nan")  # invalid entry becomes NaN so user sees the issue
+        return float("nan")
 
 # ---------- Matrix input helper (data_editor) ----------
-def get_matrix(name):
+def get_matrix(name, default_rows=2, default_cols=2, key_prefix=None):
     """
-    Show a data_editor to input a matrix. Accepts integers, decimals, and fractions (e.g. '3/4').
-    Returns a numpy array of floats (NaN for unparsable entries).
+    Display a data_editor for matrix entry and parse entries (supports fractions).
+    Returns numpy array of floats (NaN for unparsable entries).
     """
-    st.subheader(f"Matrix {name}")
-    rows = st.number_input(f"Number of rows for {name}", min_value=1, max_value=12, value=2, key=f"rows_{name}")
-    cols = st.number_input(f"Number of columns for {name}", min_value=1, max_value=12, value=2, key=f"cols_{name}")
+    if key_prefix is None:
+        key_prefix = name.replace(" ", "_")
 
+    st.subheader(f"Matrix {name}")
+    rows = st.number_input(f"Number of rows for {name}", min_value=1, max_value=50, value=default_rows, key=f"rows_{key_prefix}")
+    cols = st.number_input(f"Number of columns for {name}", min_value=1, max_value=50, value=default_cols, key=f"cols_{key_prefix}")
+
+    # default as strings so user can type fractions
     default_data = pd.DataFrame([["0" for _ in range(cols)] for _ in range(rows)])
     st.write(f"Enter values for {name}: (integers, decimals, or fractions like 1/3)")
-    matrix_input = st.data_editor(default_data, num_rows="dynamic", key=f"editor_{name}")
+    matrix_input = st.data_editor(default_data, num_rows="dynamic", key=f"editor_{key_prefix}")
 
-    # Convert the dataframe back into a numeric numpy array (fraction-aware)
+    # Convert to numeric numpy array using fraction parser
     parsed = np.zeros((len(matrix_input), len(matrix_input.columns)), dtype=float)
-
     for i in range(len(matrix_input)):
         for j in range(len(matrix_input.columns)):
             parsed[i, j] = parse_fraction_safe(matrix_input.iloc[i, j])
@@ -338,8 +348,8 @@ mode = st.selectbox(
 if mode == "Classroom Mode":
     use_two_matrices = st.checkbox("Work with two matrices (A and B)?", value=False)
 
-    A = get_matrix("A")
-    B = get_matrix("B") if use_two_matrices else None
+    A = get_matrix("A", default_rows=2, default_cols=2, key_prefix="classA")
+    B = get_matrix("B", default_rows=2, default_cols=2, key_prefix="classB") if use_two_matrices else None
 
     st.write("**Matrix A:**")
     st.write(A)
@@ -403,22 +413,60 @@ if mode == "Classroom Mode":
         except Exception as e:
             st.error(f"Error: {e}")
 
+    # Classroom footer / warning
+    st.warning("⚠️ Classroom Mode is for learning — results may not cover every edge case.")
 
 # ---------- Hat Matrix Calculator (new separate mode) ----------
 elif mode == "Hat Matrix Calculator":
     st.header("Hat Matrix Calculator")
     st.write("Enter the design matrix **X** (one matrix only). The app computes H = X (XᵀX)⁻¹ Xᵀ and the leverages (diag(H)).")
-    X = get_matrix("X")
+
+    # Google Sheets import
+    st.subheader("Import From Google Sheets (Optional)")
+    gs_url = st.text_input(
+        "Paste Google Sheets CSV Export Link:",
+        placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv",
+        key="gs_link"
+    )
+
+    X = None
+
+    if gs_url.strip():
+        try:
+            gs_df = pd.read_csv(gs_url)
+            st.write("Imported Google Sheet (first rows):")
+            st.dataframe(gs_df.head(50))
+
+            # try to coerce to numeric (if headers present this will drop non-numeric)
+            try:
+                X = gs_df.astype(float).to_numpy()
+            except Exception:
+                # try selecting numeric columns only
+                numeric_cols = gs_df.select_dtypes(include=[np.number]).columns
+                if len(numeric_cols) > 0:
+                    X = gs_df[numeric_cols].to_numpy(dtype=float)
+                else:
+                    st.error("No numeric columns found in sheet — please provide numeric sheet or use manual entry.")
+                    X = None
+
+            if X is not None:
+                st.success("Successfully imported numeric matrix from Google Sheets!")
+        except Exception as e:
+            st.error(f"❌ Failed to load Google Sheet: {e}")
+            X = None
+
+    # Manual entry if not loaded from sheet
+    if X is None:
+        X = get_matrix("X", default_rows=3, default_cols=3, key_prefix="hat")
 
     if X is not None:
         try:
             XtX = X.T @ X
-            # Use rank check to be robust to numerical issues
+            # invertibility via rank check
             if np.linalg.matrix_rank(XtX) < XtX.shape[0]:
                 st.error("❌ Cannot compute hat matrix: (XᵀX) is not invertible (rank deficient).")
             else:
-                XtX_inv = np.linalg.inv(XtX)
-                H = X @ XtX_inv @ X.T
+                H = X @ np.linalg.inv(XtX) @ X.T
                 st.subheader("🎩 Hat Matrix (H = X (XᵀX)⁻¹ Xᵀ)")
                 st.write(H)
 
@@ -437,13 +485,13 @@ elif mode == "Special Matrix Identifier":
 
     use_two_matrices = st.checkbox("Work with two matrices (A and B)?", value=False)
 
-    A = get_matrix("A")
+    A = get_matrix("A", default_rows=2, default_cols=2, key_prefix="specA")
     st.write("**Matrix A preview:**")
     st.write(A)
     check_properties(A, "Matrix A")
 
     if use_two_matrices:
-        B = get_matrix("B")
+        B = get_matrix("B", default_rows=2, default_cols=2, key_prefix="specB")
         st.write("**Matrix B preview:**")
         st.write(B)
         check_properties(B, "Matrix B")
