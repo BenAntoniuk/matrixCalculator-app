@@ -403,8 +403,6 @@ if mode == "Classroom Mode":
         except Exception as e:
             st.error(f"Error: {e}")
 
-    # Classroom footer / warning
-    st.warning("⚠️ Classroom Mode is for learning — results may not cover every edge case.")
 
 # ---------- Hat Matrix Calculator (new separate mode) ----------
 elif mode == "Hat Matrix Calculator":
