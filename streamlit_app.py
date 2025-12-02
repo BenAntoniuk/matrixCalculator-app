@@ -413,68 +413,55 @@ if mode == "Classroom Mode":
         except Exception as e:
             st.error(f"Error: {e}")
 
-    # Classroom footer / warning
-    st.warning("⚠️ Classroom Mode is for learning — results may not cover every edge case.")
 
-# ---------- Hat Matrix Calculator (new separate mode) ----------
-elif mode == "Hat Matrix Calculator":
-    st.header("Hat Matrix Calculator")
-    st.write("Enter the design matrix **X** (one matrix only). The app computes H = X (XᵀX)⁻¹ Xᵀ and the leverages (diag(H)).")
 
-    # Google Sheets import
-    st.subheader("Import From Google Sheets (Optional)")
-    gs_url = st.text_input(
-        "Paste Google Sheets CSV Export Link:",
-        placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv",
-        key="gs_link"
-    )
-
-    X = None
-
-    if gs_url.strip():
-        try:
-            gs_df = pd.read_csv(gs_url)
-            st.write("Imported Google Sheet (first rows):")
-            st.dataframe(gs_df.head(50))
-
-            # try to coerce to numeric (if headers present this will drop non-numeric)
+# ---------- Hat Matrix Mode ----------
+elif mode == "Hat Matrix Mode":
+    st.subheader("Hat Matrix Calculator 🎩")
+    input_method = st.radio("Choose input method:", ["Manual Entry", "Import Google Sheet CSV"])
+    
+    if input_method == "Manual Entry":
+        X = get_matrix("X")
+    
+    elif input_method == "Import Google Sheet CSV":
+        csv_url = st.text_input("Enter the published Google Sheet CSV URL:")
+        if csv_url:
             try:
-                X = gs_df.astype(float).to_numpy()
-            except Exception:
-                # try selecting numeric columns only
-                numeric_cols = gs_df.select_dtypes(include=[np.number]).columns
-                if len(numeric_cols) > 0:
-                    X = gs_df[numeric_cols].to_numpy(dtype=float)
+                df = pd.read_csv(csv_url)
+                # Remove columns named 'Timestamp' or 'score' (case-insensitive)
+                df = df.loc[:, ~df.columns.str.lower().isin(['timestamp', 'score'])]
+                # Keep only numeric columns and drop completely empty rows
+                df_numeric = df.select_dtypes(include=[np.number]).dropna(how="all")
+                
+                if df_numeric.empty:
+                    st.error("No numeric data found in the sheet after filtering.")
                 else:
-                    st.error("No numeric columns found in sheet — please provide numeric sheet or use manual entry.")
-                    X = None
+                    # Add intercept column of 1's
+                    df_numeric.insert(0, "Intercept", 1)
+                    X = df_numeric.to_numpy()
+                    st.write("**Imported Matrix X:**")
+                    st.write(X)
+            except Exception as e:
+                st.error(f"Error loading CSV: {e}")
 
-            if X is not None:
-                st.success("Successfully imported numeric matrix from Google Sheets!")
-        except Exception as e:
-            st.error(f"❌ Failed to load Google Sheet: {e}")
-            X = None
-
-    # Manual entry if not loaded from sheet
-    if X is None:
-        X = get_matrix("X", default_rows=3, default_cols=3, key_prefix="hat")
-
-    if X is not None:
+    # Compute Hat matrix if X exists
+    if 'X' in locals():
         try:
             XtX = X.T @ X
-            # invertibility via rank check
             if np.linalg.matrix_rank(XtX) < XtX.shape[0]:
-                st.error("❌ Cannot compute hat matrix: (XᵀX) is not invertible (rank deficient).")
+                st.error("❌ Cannot compute hat matrix: (XᵀX) is not invertible.")
             else:
-                H = X @ np.linalg.inv(XtX) @ X.T
+                XtX_inv = np.linalg.inv(XtX)
+                H = X @ XtX_inv @ X.T
                 st.subheader("🎩 Hat Matrix (H = X (XᵀX)⁻¹ Xᵀ)")
                 st.write(H)
-
+                
                 leverages = np.diag(H)
                 st.subheader("🔍 Leverage Values (diag(H))")
                 st.write(leverages)
         except Exception as e:
             st.error(f"Error computing hat matrix: {e}")
+
 
 # ---------- Special Matrix Identifier Mode ----------
 elif mode == "Special Matrix Identifier":
