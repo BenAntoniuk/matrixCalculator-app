@@ -416,7 +416,7 @@ if mode == "Classroom Mode":
 
 
 # ---------- Hat Matrix Mode ----------
-elif mode == "Hat Matrix Mode":
+elif mode == "Hat Matrix Calculator":
     st.subheader("Hat Matrix Calculator 🎩")
     input_method = st.radio("Choose input method:", ["Manual Entry", "Import Google Sheet CSV"])
     
