@@ -62,12 +62,14 @@ def show_info_expander(name, extra_info=None):
     # Use markdown-like bold via st.success (it supports simple formatting)
     st.success(f"✅ **{name}**  \n{full_desc}")
 
-
+# ---------- Fraction parser ----------
 def parse_fraction_safe(x):
     """Convert numbers or fraction-strings to float safely."""
     try:
         if isinstance(x, str):
             x = x.strip()
+            if x == "":
+                return float("nan")
             if "/" in x:
                 return float(Fraction(x))
             return float(x)
@@ -75,7 +77,12 @@ def parse_fraction_safe(x):
     except Exception:
         return float("nan")  # invalid entry becomes NaN so user sees the issue
 
+# ---------- Matrix input helper (data_editor) ----------
 def get_matrix(name):
+    """
+    Show a data_editor to input a matrix. Accepts integers, decimals, and fractions (e.g. '3/4').
+    Returns a numpy array of floats (NaN for unparsable entries).
+    """
     st.subheader(f"Matrix {name}")
     rows = st.number_input(f"Number of rows for {name}", min_value=1, max_value=12, value=2, key=f"rows_{name}")
     cols = st.number_input(f"Number of columns for {name}", min_value=1, max_value=12, value=2, key=f"cols_{name}")
@@ -322,7 +329,7 @@ st.markdown(
 # Strict dropdown for mode selection (typing disabled)
 mode = st.selectbox(
     "Choose Mode:",
-    ["Classroom Mode", "Special Matrix Identifier"],
+    ["Classroom Mode", "Hat Matrix Calculator", "Special Matrix Identifier"],
     index=0,
     key="mode_selector"
 )
@@ -345,7 +352,7 @@ if mode == "Classroom Mode":
     else:
         op = st.selectbox(
             "Choose an operation:",
-            ["Transpose", "Inverse", "Multiply by Itself", "Eigenvalues", "Check Orthogonal", "Hat Matrix Calculator"]
+            ["Transpose", "Inverse", "Multiply by Itself", "Eigenvalues", "Check Orthogonal"]
         )
 
     if op == "Transpose":
@@ -385,25 +392,6 @@ if mode == "Classroom Mode":
             else:
                 st.warning("❌ Matrix A is NOT orthogonal.")
 
-    elif op == "Hat Matrix Calculator":
-        # Use A as design matrix X
-        try:
-            XtX = A.T @ A
-            # Check invertibility via rank
-            if np.linalg.matrix_rank(XtX) < XtX.shape[0]:
-                st.error("❌ Cannot compute hat matrix: (XᵀX) is not invertible.")
-            else:
-                XtX_inv = np.linalg.inv(XtX)
-                H = A @ XtX_inv @ A.T
-                st.subheader("🎩 Hat Matrix (H = X (XᵀX)⁻¹ Xᵀ)")
-                st.write(H)
-
-                leverages = np.diag(H)
-                st.subheader("🔍 Leverage Values (diag(H))")
-                st.write(leverages)
-        except Exception as e:
-            st.error(f"Error computing hat matrix: {e}")
-
     elif op == "A × B":
         try:
             if A.shape[1] != B.shape[0]:
@@ -414,7 +402,34 @@ if mode == "Classroom Mode":
                 st.write(C)
         except Exception as e:
             st.error(f"Error: {e}")
-            
+
+    # Classroom footer / warning
+    st.warning("⚠️ Classroom Mode is for learning — results may not cover every edge case.")
+
+# ---------- Hat Matrix Calculator (new separate mode) ----------
+elif mode == "Hat Matrix Calculator":
+    st.header("Hat Matrix Calculator")
+    st.write("Enter the design matrix **X** (one matrix only). The app computes H = X (XᵀX)⁻¹ Xᵀ and the leverages (diag(H)).")
+    X = get_matrix("X")
+
+    if X is not None:
+        try:
+            XtX = X.T @ X
+            # Use rank check to be robust to numerical issues
+            if np.linalg.matrix_rank(XtX) < XtX.shape[0]:
+                st.error("❌ Cannot compute hat matrix: (XᵀX) is not invertible (rank deficient).")
+            else:
+                XtX_inv = np.linalg.inv(XtX)
+                H = X @ XtX_inv @ X.T
+                st.subheader("🎩 Hat Matrix (H = X (XᵀX)⁻¹ Xᵀ)")
+                st.write(H)
+
+                leverages = np.diag(H)
+                st.subheader("🔍 Leverage Values (diag(H))")
+                st.write(leverages)
+        except Exception as e:
+            st.error(f"Error computing hat matrix: {e}")
+
 # ---------- Special Matrix Identifier Mode ----------
 elif mode == "Special Matrix Identifier":
     # Sidebar dropdown for all matrix types (alphabetized)
