@@ -1,4 +1,3 @@
-# app.py — Full copy-paste ready
 import streamlit as st
 import numpy as np
 import pandas as pd
@@ -7,17 +6,16 @@ from fractions import Fraction
 
 st.set_page_config(page_title="Matrix Toolkit", layout="wide")
 
-# ---------- CONFIG ----------
-PDF_URL = "/mnt/data/Many_many_matrices (6).pdf"  # kept for reference
 
-# ---------- Small helper ----------
+#PDF_URL = "/mnt/data/Many_many_matrices (6).pdf" 
+
 def safe_allclose(a, b, atol=1e-8):
     try:
         return np.allclose(a, b, atol=atol)
     except Exception:
         return False
 
-# ---------- MATRIX TYPE DEFINITIONS (alphabetized) ----------
+# defs
 MATRIX_DEFINITIONS = {
     "Arrowhead": "Square matrix where all entries are 0 except for the main diagonal, first row, and first column.",
     "Band": "A sparse matrix where the non-zero elements are centered around the main diagonal in a band.",
@@ -57,14 +55,14 @@ MATRIX_DEFINITIONS = {
 # Alphabetize list for sidebar usage
 ALL_TYPES_SORTED = sorted(MATRIX_DEFINITIONS.keys(), key=lambda s: s.lower())
 
-# ---------- UI helper for detected types ----------
+# UI helper for detected types
 def show_info_expander(name, extra_info=None):
     """Display detected matrix type in green checkmark style with bold name and newline."""
     desc = MATRIX_DEFINITIONS.get(name, "")
     full_desc = desc if extra_info is None else f"{desc} ({extra_info})"
     st.success(f"✅ **{name}**  \n{full_desc}")
 
-# ---------- Fraction parser ----------
+# fractions
 def parse_fraction_safe(x):
     """Convert integers, floats, or fraction strings like '3/4' safely to float."""
     try:
@@ -84,7 +82,6 @@ def parse_fraction_safe(x):
     except Exception:
         return float("nan")
 
-# ---------- Matrix input helper (data_editor) ----------
 def get_matrix(name, default_rows=2, default_cols=2, key_prefix=None):
     """
     Display a data_editor for matrix entry and parse entries (supports fractions).
@@ -110,7 +107,7 @@ def get_matrix(name, default_rows=2, default_cols=2, key_prefix=None):
 
     return parsed
 
-# ---------- Property checks ----------
+# checking special cases
 def check_properties(M, name="Matrix"):
     rows, cols = M.shape
     square = rows == cols
@@ -225,13 +222,10 @@ def check_properties(M, name="Matrix"):
         detected.append("Hermitian")
         show_info_expander("Hermitian")
 
-    # Idempotent / Hat
+    # Idempotent
     if square and safe_allclose(A @ A, A):
         detected.append("Idempotent")
         show_info_expander("Idempotent")
-        if safe_allclose(A, A.T):
-            detected.append("Hat")
-            show_info_expander("Hat")
 
     # Sparse heuristic
     sparsity = 1.0 - (np.count_nonzero(A) / A.size)
