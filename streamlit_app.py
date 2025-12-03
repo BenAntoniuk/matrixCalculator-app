@@ -338,7 +338,7 @@ mode = st.selectbox(
     key="mode_selector"
 )
 
-# ---------- Classroom Mode ----------
+# Classroom Mode
 if mode == "Classroom Mode":
     use_two_matrices = st.checkbox("Work with two matrices (A and B)?", value=False)
 
@@ -409,7 +409,7 @@ if mode == "Classroom Mode":
 
 
 
-# ---------- Hat Matrix Mode ----------
+# Hat Matrix Mode
 elif mode == "Hat Matrix Calculator":
     st.subheader("Hat Matrix Calculator 🎩")
     input_method = st.radio("Choose input method:", ["Manual Entry", "Import Google Sheet CSV"])
@@ -457,30 +457,14 @@ elif mode == "Hat Matrix Calculator":
             st.error(f"Error computing hat matrix: {e}")
 
 
-# ---------- Special Matrix Identifier Mode ----------
+# Special Matrix Identifier Mode
 elif mode == "Special Matrix Identifier":
     # Sidebar dropdown for all matrix types (alphabetized)
     st.sidebar.subheader("All Matrix Types")
     selected_type = st.sidebar.selectbox("Select a type to view its description:", ALL_TYPES_SORTED)
     st.sidebar.markdown(f"**{selected_type}**  \n{MATRIX_DEFINITIONS[selected_type]}")
 
-    use_two_matrices = st.checkbox("Work with two matrices (A and B)?", value=False)
-
     A = get_matrix("A", default_rows=2, default_cols=2, key_prefix="specA")
     st.write("**Matrix A preview:**")
     st.write(A)
     check_properties(A, "Matrix A")
-
-    if use_two_matrices:
-        B = get_matrix("B", default_rows=2, default_cols=2, key_prefix="specB")
-        st.write("**Matrix B preview:**")
-        st.write(B)
-        check_properties(B, "Matrix B")
-
-        if A.shape[1] == B.shape[0]:
-            C = A @ B
-            st.subheader("**Result of A × B:**")
-            st.write(C)
-            check_properties(C, "Matrix A × B")
-        else:
-            st.warning("⚠️ Cannot multiply A × B (dimension mismatch).")
