@@ -112,7 +112,7 @@ def check_properties(M, name="Matrix"):
     rows, cols = M.shape
     square = rows == cols
 
-    st.subheader(f"🔎 Results for {name}")
+    st.subheader(f" Results for {name}")
 
     if not square:
         st.info("Matrix is not square — only non-square-specific checks and eigenvalues (skipped).")
@@ -411,7 +411,7 @@ if mode == "Classroom Mode":
 
 # Hat Matrix Mode
 elif mode == "Hat Matrix Calculator":
-    st.subheader("Hat Matrix Calculator 🎩")
+    st.subheader("Hat Matrix Calculator")
     input_method = st.radio("Choose input method:", ["Manual Entry", "Import Google Sheet CSV"])
     
     if input_method == "Manual Entry":
@@ -447,11 +447,11 @@ elif mode == "Hat Matrix Calculator":
             else:
                 XtX_inv = np.linalg.inv(XtX)
                 H = X @ XtX_inv @ X.T
-                st.subheader("🎩 Hat Matrix (H = X (XᵀX)⁻¹ Xᵀ)")
+                st.subheader("Hat Matrix (H = X (XᵀX)⁻¹ Xᵀ)")
                 st.write(H)
                 
                 leverages = np.diag(H)
-                st.subheader("🔍 Leverage Values (diag(H))")
+                st.subheader("Leverage Values (diag(H))")
                 st.write(leverages)
         except Exception as e:
             st.error(f"Error computing hat matrix: {e}")
